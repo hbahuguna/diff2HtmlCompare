@@ -428,8 +428,8 @@ creates an html page which highlights the differences between the two. """
     parser.add_argument('-v', '--verbose', action='store_true', help='show verbose output.')
     parser.add_argument('url1', help='source url to compare ("before" url).')
     parser.add_argument('url2', help='target url to compare ("after" url).')
-    parser.add_argument('env1', help='source env to compare ("before" env).')
-    parser.add_argument('env2', help='source env to compare ("after" env).')
+    parser.add_argument('env1', help='source env to compare ("before" env e.g. prod).')
+    parser.add_argument('env2', help='source env to compare ("after" env e.g. qa).')
 
     args = parser.parse_args()
     outputpath = args.env1 + "_" + args.env2 + ".html"
