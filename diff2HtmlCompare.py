@@ -33,7 +33,7 @@ from pygments.formatters import HtmlFormatter
 from pygments.token import *
 
 # Monokai is not quite right yet
-PYGMENTS_STYLES = ["vs", "xcode"] 
+PYGMENTS_STYLES = ["vs", "xcode"]
 
 HTML_TEMPLATE = """
 <!DOCTYPE html>
@@ -78,6 +78,10 @@ HTML_TEMPLATE = """
             <div class="switch">
               <input id="showdeleted" class="toggle toggle-yes-no menuoption" type="checkbox" checked>
               <label for="showdeleted" data-on="&#10004; Deleted" data-off="Deleted"></label>
+            </div>
+            <div class="switch">
+              <input id="showaddeddeletedmodified" class="toggle toggle-yes-no menuoption" type="checkbox" checked>
+              <label for="showaddeddeletedmodified" data-on="&#10004; AddDelMod" data-off="AddDelMod"></label>
             </div>
           </div>
         </div>
@@ -142,26 +146,26 @@ class DiffHtmlFormatter(HtmlFormatter):
                 if change:
                     if isinstance(left_no, int) and isinstance(right_no, int):
                         no = '<span class="lineno_q lineno_leftchange">' + \
-                            str(left_no) + "</span>"
+                             str(left_no) + "</span>"
                     elif isinstance(left_no, int) and not isinstance(right_no, int):
                         no = '<span class="lineno_q lineno_leftdel">' + \
-                            str(left_no) + "</span>"
+                             str(left_no) + "</span>"
                     elif not isinstance(left_no, int) and isinstance(right_no, int):
                         no = '<span class="lineno_q lineno_leftadd">  </span>'
                 else:
-                    no = '<span class="lineno_q">' + str(left_no) + "</span>"
+                    no = '<span class="lineno_q lineno_nochange">' + str(left_no) + "</span>"
             else:
                 if change:
                     if isinstance(left_no, int) and isinstance(right_no, int):
                         no = '<span class="lineno_q lineno_rightchange">' + \
-                            str(right_no) + "</span>"
+                             str(right_no) + "</span>"
                     elif isinstance(left_no, int) and not isinstance(right_no, int):
                         no = '<span class="lineno_q lineno_rightdel">  </span>'
                     elif not isinstance(left_no, int) and isinstance(right_no, int):
                         no = '<span class="lineno_q lineno_rightadd">' + \
-                            str(right_no) + "</span>"
+                             str(right_no) + "</span>"
                 else:
-                    no = '<span class="lineno_q">' + str(right_no) + "</span>"
+                    no = '<span class="lineno_q lineno_nochange">' + str(right_no) + "</span>"
 
             retlinenos.append(no)
 
@@ -193,6 +197,7 @@ class DiffHtmlFormatter(HtmlFormatter):
                         else:
                             i = 1
                             t = left_line
+                        t = '<span class="left_diff_no_change">' + t + "</span>"
                 else:
                     if change:
                         if isinstance(left_no, int) and isinstance(right_no, int) and right_no <= len(source):
@@ -212,6 +217,7 @@ class DiffHtmlFormatter(HtmlFormatter):
                         else:
                             i = 1
                             t = right_line
+                        t = '<span class="right_diff_no_change">' + t + "</span>"
                 yield i, t
             except:
                 # print "WARNING! failed to enumerate diffs fully!"
@@ -226,7 +232,7 @@ class DiffHtmlFormatter(HtmlFormatter):
                 lncount += 1
 
             # compatibility Python v2/v3
-            if sys.version_info > (3,0):
+            if sys.version_info > (3, 0):
                 dummyoutfile.write(line)
             else:
                 dummyoutfile.write(unicode(line))
@@ -360,18 +366,18 @@ class CodeDiff(object):
             codeContents.append(formatted)
 
         answers = {
-            "html_title":     self.filename,
-            "reset_css":      self.resetCssFile,
-            "pygments_css":   self.pygmentsCssFile % options.syntax_css,
-            "diff_css":       self.diffCssFile,
-            "page_title":     self.filename,
-            "original_code":  codeContents[0],
-            "modified_code":  codeContents[1],
-            "jquery_js":      self.jqueryJsFile,
-            "diff_js":        self.diffJsFile,
-            "page_width":     "page-80-width" if options.print_width else "page-full-width",
-            "env1":           options.env1,
-            "env2":           options.env2
+            "html_title": self.filename,
+            "reset_css": self.resetCssFile,
+            "pygments_css": self.pygmentsCssFile % options.syntax_css,
+            "diff_css": self.diffCssFile,
+            "page_title": self.filename,
+            "original_code": codeContents[0],
+            "modified_code": codeContents[1],
+            "jquery_js": self.jqueryJsFile,
+            "diff_js": self.diffJsFile,
+            "page_width": "page-80-width" if options.print_width else "page-full-width",
+            "env1": options.env1,
+            "env2": options.env2
         }
 
         self.htmlContents = HTML_TEMPLATE % answers
@@ -381,24 +387,32 @@ class CodeDiff(object):
         fh.write(self.htmlContents)
         fh.close()
 
+
 import urllib.request
+import ssl
+
+
 def getHtml(url):
+    ssl._create_default_https_context = ssl._create_unverified_context
     fp = urllib.request.urlopen(url)
     mybytes = fp.read()
     mystr = mybytes.decode("utf8")
     fp.close()
     return mystr
 
+
 def main(url1, url2, outputpath, options):
     mystr1 = getHtml(url1)
     mystr2 = getHtml(url2)
-    codeDiff = CodeDiff(fromtxt=mystr1, totxt=mystr2, name="Diff:" + options.env1 +  "_" + options.env2)
+    codeDiff = CodeDiff(fromtxt=mystr1, totxt=mystr2, name="Diff:" + options.env1 + "_" + options.env2)
     codeDiff.format(options)
     codeDiff.write(outputpath)
+
 
 def show(outputpath):
     path = os.path.abspath(outputpath)
     webbrowser.open('file://' + path)
+
 
 if __name__ == "__main__":
     description = """Given two source urls this application\
@@ -407,16 +421,15 @@ creates an html page which highlights the differences between the two. """
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument('-s', '--show', action='store_true',
                         help='show html in a browser.')
-    parser.add_argument('-p', '--print-width', action='store_true', 
-        help='Restrict code to 80 columns wide. (printer friendly in landscape)')
+    parser.add_argument('-p', '--print-width', action='store_true',
+                        help='Restrict code to 80 columns wide. (printer friendly in landscape)')
     parser.add_argument('-c', '--syntax-css', action='store', default="vs",
-        help='Pygments CSS for code syntax highlighting. Can be one of: %s' % str(PYGMENTS_STYLES))
+                        help='Pygments CSS for code syntax highlighting. Can be one of: %s' % str(PYGMENTS_STYLES))
     parser.add_argument('-v', '--verbose', action='store_true', help='show verbose output.')
     parser.add_argument('url1', help='source url to compare ("before" url).')
     parser.add_argument('url2', help='target url to compare ("after" url).')
     parser.add_argument('env1', help='source env to compare ("before" env).')
     parser.add_argument('env2', help='source env to compare ("after" env).')
-
 
     args = parser.parse_args()
     outputpath = args.env1 + "_" + args.env2 + ".html"

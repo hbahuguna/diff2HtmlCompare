@@ -93,7 +93,7 @@ These styles are used to modify the containing area is placed/displayed.
 }
 
 input.toggle-yes-no + label {
-  width: 100px;
+  width: 200px;
   height: 30px;
 }
 input.toggle-yes-no + label:before, input.toggle-yes-no + label:after {
