@@ -1,6 +1,6 @@
 $( document ).ready(function() {
 
-function original() {
+function original_html() {
        $('.right_diff_del').show()
        $('.left_diff_del').show()
        $('.right_diff_change').show()
@@ -23,13 +23,15 @@ function original() {
     $showadded  = $('.menuoption#showadded'),
     $showmodified  = $('.menuoption#showmodified'),
     $showdeleted  = $('.menuoption#showdeleted');
-    $showaddeddeletedmodified  = $('.menuoption#showaddeddeletedmodified');
-
-  $showadded.state = false
+    $original  = $('.menuoption#original');
+    $('.left_diff_no_change').hide()
+    $('.right_diff_no_change').hide()
+    $('.lineno_nochange').hide()
+  $showadded.state = true
   $showadded.on("click", function(){
     switch ($showadded.state) {
     case false:
-	original()
+	original_html()
         $showadded.state = true
         break;
     case true:
@@ -49,11 +51,11 @@ function original() {
       }
   });
 
-  $showmodified.state = false
+  $showmodified.state = true
   $showmodified.on("click", function(){
     switch ($showmodified.state) {
     case false:
-	original()
+	original_html()
        $showmodified.state = true
         break;
     case true:
@@ -74,11 +76,11 @@ function original() {
   });
 
 
-  $showdeleted.state = false
+  $showdeleted.state = true
   $showdeleted.on("click", function(){
     switch ($showdeleted.state) {
     case false:
-	original()
+	original_html()
         $showdeleted.state = true
         break;
     case true:
@@ -98,18 +100,18 @@ function original() {
       }
   });
 
-  $showaddeddeletedmodified.state = false
-  $showaddeddeletedmodified.on("click", function(){
-    switch ($showaddeddeletedmodified.state) {
-    case false:
-	original()
-        $showaddeddeletedmodified.state = true
-        break;
+  $original.state = true
+  $original.on("click", function(){
+    switch ($original.state) {
     case true:
+	original_html()
+        $original.state = false
+        break;
+    case false:
        $('.left_diff_no_change').hide()
        $('.right_diff_no_change').hide()
        $('.lineno_nochange').hide()
-       $showaddeddeletedmodified.state = false
+       $original.state = true
         break;
       }
   });

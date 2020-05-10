@@ -69,20 +69,20 @@ HTML_TEMPLATE = """
           </div>
           <div class="switches">
             <div class="switch">
+              <input id="original" class="toggle toggle-yes-no  menuoption" type="checkbox" checked>
+              <label for="original" data-on="View Complete Diff" data-off="View Only AddDelMod"></label>
+            </div>
+            <div class="switch">
               <input id="showadded" class="toggle toggle-yes-no menuoption" type="checkbox" checked>
-              <label for="showadded" data-on="&#10004; Added" data-off="Added"></label>
+              <label for="showadded" data-on="View Only Added" data-off="View Complete Diff"></label>
             </div>
             <div class="switch">
               <input id="showmodified" class="toggle toggle-yes-no menuoption" type="checkbox" checked>
-              <label for="showmodified" data-on="&#10004; Modified" data-off="Modified"></label>
+              <label for="showmodified" data-on="View Only Modified" data-off="View Complete Diff"></label>
             </div>
             <div class="switch">
               <input id="showdeleted" class="toggle toggle-yes-no menuoption" type="checkbox" checked>
-              <label for="showdeleted" data-on="&#10004; Deleted" data-off="Deleted"></label>
-            </div>
-            <div class="switch">
-              <input id="showaddeddeletedmodified" class="toggle toggle-yes-no menuoption" type="checkbox" checked>
-              <label for="showaddeddeletedmodified" data-on="&#10004; AddDelMod" data-off="AddDelMod"></label>
+              <label for="showdeleted" data-on="View Only Deleted" data-off="View Complete Diff"></label>
             </div>
           </div>
         </div>
@@ -334,7 +334,7 @@ class CodeDiff(object):
                                linejunk=None, charjunk=difflib.IS_CHARACTER_JUNK)
         return list(diffs)
 
-    def format(self, options):
+    def format(self, options, env1, env2):
         self.diffs = self.getDiffDetails(self.fromfile, self.tofile)
 
         if options.verbose:
@@ -377,8 +377,8 @@ class CodeDiff(object):
             "jquery_js": self.jqueryJsFile,
             "diff_js": self.diffJsFile,
             "page_width": "page-80-width" if options.print_width else "page-full-width",
-            "env1": options.env1,
-            "env2": options.env2
+            "env1": env1,
+            "env2": env2
         }
 
         self.htmlContents = HTML_TEMPLATE % answers
@@ -391,28 +391,59 @@ class CodeDiff(object):
 
 import urllib.request
 import ssl
+from bs4 import BeautifulSoup
 
 
-def getHtml(url):
+def getHtml(url, ignorelist):
     ssl._create_default_https_context = ssl._create_unverified_context
     fp = urllib.request.urlopen(url)
     mybytes = fp.read()
     mystr = mybytes.decode("utf8")
+    soup = BeautifulSoup(mystr, "html.parser")
+    # kill all script and style elements
+    #for script in soup(["script", "style"]):
+    #    script.extract()
+
+    # get text
+    text = soup.get_text()
+
+    # break into lines and remove leading and trailing space on each
+    lines_original = (line.strip() for line in text.splitlines())
+    lines = []
+    for line in lines_original:
+        remove_line = False
+        for word in ignorelist:
+            if word.lower() in line.lower():
+                remove_line = True
+                break
+        if not remove_line:
+            lines.append(line)
+    # break multi-headlines into a line each
+    chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
+    # drop blank lines
+    text = '\n'.join(chunk for chunk in chunks if chunk)
     fp.close()
-    return mystr
+    return text
 
 
-def main(url1, url2, outputpath, options):
-    mystr1 = getHtml(url1)
-    mystr2 = getHtml(url2)
-    codeDiff = CodeDiff(fromtxt=mystr1, totxt=mystr2, name="Diff:" + options.env1 + "_" + options.env2)
-    codeDiff.format(options)
-    codeDiff.write(outputpath)
+def main(options, base_env, base_url):
+    htmls = {}
+    htmls[base_env] = getHtml(base_url, options.ignorewords)
+    for url,env in zip(options.urls, options.environments):
+        htmls[env] = getHtml(url, options.ignorewords)
+    for env in htmls:
+        codeDiff = CodeDiff(fromtxt=htmls[base_env], totxt=htmls[env], name="Diff:" + base_env + "_" + env)
+        codeDiff.format(options, base_env, env)
+        codeDiff.write("reports/" + base_env + "_" + env + ".html")
 
 
-def show(outputpath):
-    path = os.path.abspath(outputpath)
-    webbrowser.open('file://' + path)
+
+def show(options, base_env):
+    for env in options.environments:
+        path = os.path.abspath("reports/" + base_env + "_" + env + ".html")
+        webbrowser.open('file://' + path)
+
+
 
 
 if __name__ == "__main__":
@@ -427,13 +458,24 @@ creates an html page which highlights the differences between the two. """
     parser.add_argument('-c', '--syntax-css', action='store', default="vs",
                         help='Pygments CSS for code syntax highlighting. Can be one of: %s' % str(PYGMENTS_STYLES))
     parser.add_argument('-v', '--verbose', action='store_true', help='show verbose output.')
-    parser.add_argument('url1', help='source url to compare ("before" url).')
-    parser.add_argument('url2', help='target url to compare ("after" url).')
-    parser.add_argument('env1', help='source env to compare ("before" env e.g. prod).')
-    parser.add_argument('env2', help='source env to compare ("after" env e.g. qa).')
+    parser.add_argument('-i', '--ignorewords', type=str, nargs='*', help='ignore lines with these words')
+    parser.add_argument('-e', '--environments',type=str, nargs='+', help='environments to compare against')
+    parser.add_argument('-u', '--urls', type=str, nargs='+', help='urls to compare against,', required=True)
 
     args = parser.parse_args()
-    outputpath = "reports/" + args.env1 + "_" + args.env2 + ".html"
-    main(args.url1, args.url2, outputpath, args)
+    number_of_urls = len(args.urls)
+    if number_of_urls < 2:
+        print("expecting at least 2 urls to compare against")
+        sys.exit(1)
+    if args.environments == None:
+        args.environments = []
+        for i in range(1, number_of_urls+1):
+            args.environments.append("env" + str(i))
+    if len(args.urls) != len(args.environments):
+        print("expecting same number of urls and environments")
+        sys.exit(1)
+    base_env = args.environments.pop(0)
+    base_url = args.urls.pop(0)
+    main(args, base_env, base_url)
     if args.show:
-        show(outputpath)
+        show(args, base_env)
