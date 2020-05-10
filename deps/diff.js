@@ -1,103 +1,100 @@
 $( document ).ready(function() {
 
-
+function original() {
+       $('.right_diff_del').show()
+       $('.left_diff_del').show()
+       $('.right_diff_change').show()
+       $('.left_diff_change').show()
+       $('.right_diff_add').show()
+       $('.left_diff_add').show()
+       $('.lineno_rightadd').show()
+       $('.lineno_leftadd').show()
+       $('.lineno_rightdel').show()
+       $('.lineno_leftdel').show()
+       $('.lineno_rightchange').show()
+       $('.lineno_leftchange').show()
+}
 
   // selector cache
   var
-    $showoriginal  = $('.menuoption#showoriginal'),
+    $showadded  = $('.menuoption#showadded'),
     $showmodified  = $('.menuoption#showmodified'),
-    $codeprintmargin  = $('.menuoption#codeprintmargin'),
-    $highlight  = $('.menuoption#highlight'),
-    $dosyntaxhighlight  = $('.menuoption#dosyntaxhighlight');
+    $showdeleted  = $('.menuoption#showdeleted');
 
-  $showoriginal.state = true
-  $showoriginal.on("click", function(){
-    switch ($showoriginal.state) {
+  $showadded.state = false
+  $showadded.on("click", function(){
+    switch ($showadded.state) {
     case false:
-       $('#leftcode').show()
-       $('.right_diff_del').show()
-       $('.lineno_rightdel').show()
-       $showoriginal.state = true
+	original()
+        $showadded.state = true
         break;
     case true:
-       $('#leftcode').hide()
        $('.right_diff_del').hide()
+       $('.left_diff_del').hide()
+       $('.right_diff_change').hide()
+       $('.left_diff_change').hide()
+       $('.right_diff_add').show()
+       $('.left_diff_add').show()
+       $('.lineno_rightadd').show()
+       $('.lineno_leftadd').show()
        $('.lineno_rightdel').hide()
-       $showoriginal.state = false
+       $('.lineno_leftdel').hide()
+       $('.lineno_rightchange').hide()
+       $('.lineno_leftchange').hide()
+       $showadded.state = false
         break;
       }
   });
 
-  $showmodified.state = true
+  $showmodified.state = false
   $showmodified.on("click", function(){
     switch ($showmodified.state) {
     case false:
-       $('#rightcode').show()
-       $('.left_diff_add').show()
-       $('.lineno_leftadd').show()
+	original()
        $showmodified.state = true
         break;
     case true:
-       $('#rightcode').hide()
+       $('.right_diff_del').hide()
+       $('.left_diff_del').hide()
+       $('.right_diff_change').show()
+       $('.left_diff_change').show()
+       $('.right_diff_add').hide()
        $('.left_diff_add').hide()
+       $('.lineno_rightadd').hide()
        $('.lineno_leftadd').hide()
+       $('.lineno_rightdel').hide()
+       $('.lineno_leftdel').hide()
+       $('.lineno_rightchange').show()
+       $('.lineno_leftchange').show()
        $showmodified.state = false
         break;
       }
   });
 
 
-  $codeprintmargin.state = true
-  $codeprintmargin.on("click", function(){
-    switch ($codeprintmargin.state) {
+  $showdeleted.state = false
+  $showdeleted.on("click", function(){
+    switch ($showdeleted.state) {
     case false:
-       $('.printmargin').show()
-       $codeprintmargin.state = true
+	original()
+        $showdeleted.state = true
         break;
     case true:
-       $('.printmargin').hide()
-       $codeprintmargin.state = false
+       $('.right_diff_del').show()
+       $('.left_diff_del').show()
+       $('.right_diff_change').hide()
+       $('.left_diff_change').hide()
+       $('.right_diff_add').hide()
+       $('.left_diff_add').hide()
+       $('.lineno_rightadd').hide()
+       $('.lineno_leftadd').hide()
+       $('.lineno_rightdel').show()
+       $('.lineno_leftdel').show()
+       $('.lineno_rightchange').hide()
+       $('.lineno_leftchange').hide()
+       $showdeleted.state = false
         break;
       }
   });
-
-
-  $highlight.state = true
-  $highlight.on("click", function(){
-    switch ($highlight.state) {
-    case false:
-       $('.left_diff_change').removeClass('clearbg');
-       $('.left_diff_del').removeClass('clearbg');
-
-       $('.right_diff_add').removeClass('clearbg');
-       $('.right_diff_change').removeClass('clearbg');
-       $highlight.state = true
-        break;
-    case true:
-       $('.left_diff_change').addClass('clearbg');
-       $('.left_diff_del').addClass('clearbg');
-
-       $('.right_diff_add').addClass('clearbg');
-       $('.right_diff_change').addClass('clearbg');
-       $highlight.state = false
-        break;
-      }
-  });
-
-  var originalStyle = $("link.syntaxdef").attr("href")
-  $dosyntaxhighlight.state = true
-  $dosyntaxhighlight.on("click", function(){
-    switch ($dosyntaxhighlight.state) {
-    case false:
-       $("link.syntaxdef").attr("href", originalStyle);
-       $dosyntaxhighlight.state = true
-        break;
-    case true:
-       $("link.syntaxdef").attr("href","/deps/codeformats/bw.css");
-       $dosyntaxhighlight.state = false
-        break;
-      }
-  });
-
 
 });

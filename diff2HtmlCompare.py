@@ -68,43 +68,29 @@ HTML_TEMPLATE = """
           </div>
           <div class="switches">
             <div class="switch">
-              <input id="showoriginal" class="toggle toggle-yes-no menuoption" type="checkbox" checked>
-              <label for="showoriginal" data-on="&#10004; Original" data-off="Original"></label>
+              <input id="showadded" class="toggle toggle-yes-no menuoption" type="checkbox" checked>
+              <label for="showadded" data-on="&#10004; Added" data-off="Added"></label>
             </div>
             <div class="switch">
               <input id="showmodified" class="toggle toggle-yes-no menuoption" type="checkbox" checked>
               <label for="showmodified" data-on="&#10004; Modified" data-off="Modified"></label>
             </div>
             <div class="switch">
-              <input id="highlight" class="toggle toggle-yes-no menuoption" type="checkbox" checked>
-              <label for="highlight" data-on="&#10004; Highlight" data-off="Highlight"></label>
-            </div>
-            <div class="switch">
-              <input id="codeprintmargin" class="toggle toggle-yes-no menuoption" type="checkbox" checked>
-              <label for="codeprintmargin" data-on="&#10004; Margin" data-off="Margin"></label>
-            </div>
-            <div class="switch">
-              <input id="dosyntaxhighlight" class="toggle toggle-yes-no menuoption" type="checkbox" checked>
-              <label for="dosyntaxhighlight" data-on="&#10004; Syntax" data-off="Syntax"></label>
+              <input id="showdeleted" class="toggle toggle-yes-no menuoption" type="checkbox" checked>
+              <label for="showdeleted" data-on="&#10004; Deleted" data-off="Deleted"></label>
             </div>
           </div>
         </div>
         <div id="maincontainer" class="%(page_width)s">
             <div id="leftcode" class="left-inner-shadow codebox divider-outside-bottom">
                 <div class="codefiletab">
-                    &#10092; Original
-                </div>
-                <div class="printmargin">
-                    01234567890123456789012345678901234567890123456789012345678901234567890123456789
+                    %(env1)s
                 </div>
                 %(original_code)s
             </div>
             <div id="rightcode" class="left-inner-shadow codebox divider-outside-bottom">
                 <div class="codefiletab">
-                    &#10093; Modified
-                </div>
-                <div class="printmargin">
-                    01234567890123456789012345678901234567890123456789012345678901234567890123456789
+                     %(env2)s
                 </div>
                 %(modified_code)s
             </div>
@@ -287,7 +273,7 @@ class CodeDiff(object):
     resetCssFile = "./deps/reset.css"
     jqueryJsFile = "./deps/jquery.min.js"
 
-    def __init__(self, fromfile, tofile, fromtxt=None, totxt=None, name=None):
+    def __init__(self, fromtxt, totxt, fromfile=None, tofile=None, name=None):
         self.filename = name
         self.fromfile = fromfile
         if fromtxt == None:
@@ -383,7 +369,9 @@ class CodeDiff(object):
             "modified_code":  codeContents[1],
             "jquery_js":      self.jqueryJsFile,
             "diff_js":        self.diffJsFile,
-            "page_width":     "page-80-width" if options.print_width else "page-full-width"
+            "page_width":     "page-80-width" if options.print_width else "page-full-width",
+            "env1":           options.env1,
+            "env2":           options.env2
         }
 
         self.htmlContents = HTML_TEMPLATE % answers
@@ -393,9 +381,18 @@ class CodeDiff(object):
         fh.write(self.htmlContents)
         fh.close()
 
+import urllib.request
+def getHtml(url):
+    fp = urllib.request.urlopen(url)
+    mybytes = fp.read()
+    mystr = mybytes.decode("utf8")
+    fp.close()
+    return mystr
 
-def main(file1, file2, outputpath, options):
-    codeDiff = CodeDiff(file1, file2, name=file2)
+def main(url1, url2, outputpath, options):
+    mystr1 = getHtml(url1)
+    mystr2 = getHtml(url2)
+    codeDiff = CodeDiff(fromtxt=mystr1, totxt=mystr2, name="Diff:" + options.env1 +  "_" + options.env2)
     codeDiff.format(options)
     codeDiff.write(outputpath)
 
@@ -404,7 +401,7 @@ def show(outputpath):
     webbrowser.open('file://' + path)
 
 if __name__ == "__main__":
-    description = """Given two source files this application\
+    description = """Given two source urls this application\
 creates an html page which highlights the differences between the two. """
 
     parser = argparse.ArgumentParser(description=description)
@@ -415,15 +412,14 @@ creates an html page which highlights the differences between the two. """
     parser.add_argument('-c', '--syntax-css', action='store', default="vs",
         help='Pygments CSS for code syntax highlighting. Can be one of: %s' % str(PYGMENTS_STYLES))
     parser.add_argument('-v', '--verbose', action='store_true', help='show verbose output.')
-    parser.add_argument('file1', help='source file to compare ("before" file).')
-    parser.add_argument('file2', help='source file to compare ("after" file).')
+    parser.add_argument('url1', help='source url to compare ("before" url).')
+    parser.add_argument('url2', help='target url to compare ("after" url).')
+    parser.add_argument('env1', help='source env to compare ("before" env).')
+    parser.add_argument('env2', help='source env to compare ("after" env).')
+
 
     args = parser.parse_args()
-
-    if args.syntax_css not in PYGMENTS_STYLES:
-        raise ValueError("Syntax CSS (-c) must be one of %r." % PYGMENTS_STYLES)
-
-    outputpath = "index.html"
-    main(args.file1, args.file2, outputpath, args)
+    outputpath = args.env1 + "_" + args.env2 + ".html"
+    main(args.url1, args.url2, outputpath, args)
     if args.show:
         show(outputpath)
