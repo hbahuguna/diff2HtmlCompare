@@ -388,15 +388,21 @@ class CodeDiff(object):
         fh.write(self.htmlContents)
         fh.close()
 
-
-import urllib.request
+if sys.version_info[0] < 3:
+    import urllib2
+else:
+    import urllib.request
 import ssl
 from bs4 import BeautifulSoup
 
 
 def getHtml(url, ignorelist):
     ssl._create_default_https_context = ssl._create_unverified_context
-    fp = urllib.request.urlopen(url)
+    if sys.version_info[0] < 3:
+        req = urllib2.Request(url)
+        fp = urllib2.urlopen(req)
+    else:
+        fp = urllib.request.urlopen(url)
     mybytes = fp.read()
     mystr = mybytes.decode("utf8")
     soup = BeautifulSoup(mystr, "html.parser")
