@@ -432,7 +432,7 @@ creates an html page which highlights the differences between the two. """
     parser.add_argument('env2', help='source env to compare ("after" env e.g. qa).')
 
     args = parser.parse_args()
-    outputpath = args.env1 + "_" + args.env2 + ".html"
+    outputpath = "reports/" + args.env1 + "_" + args.env2 + ".html"
     main(args.url1, args.url2, outputpath, args)
     if args.show:
         show(outputpath)

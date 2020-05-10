@@ -1,3 +1,5 @@
-index.html
+reports/*.html
 test/
 venv/
+*.DS_Store
+.idea/*
